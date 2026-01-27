@@ -9,7 +9,7 @@ import time
 import osmnx as ox
 from utils import plot_everything
 
-logger.add("mein_log_file.log", rotation="1 MB", level="INFO")
+# logger.add("mein_log_file.log", rotation="1 MB", level="INFO")
 
 def find_first_file(folder: str | Path, search_term: str, pattern="*"):
     folder = Path(folder)
@@ -98,11 +98,6 @@ if run:
     output_file_name = mp.generate_output_filename(CITY, theme)
     start = time.time()
     with st.spinner("Creating Poster...", show_time=True):
-    #     mp.create_poster(city=CITY,
-    #                       country=COUNTRY,
-    #                       point=COORDS,
-    #                       dist=radius,
-    #                       output_file=output_file_name)
 
         G = ox.graph_from_point(COORDS, dist=radius, dist_type=dist_type, network_type=network)
         time.sleep(0.5)
@@ -119,12 +114,13 @@ if run:
 
         plot_everything(G=G, water=water, parks=parks, THEME=THEME, city=CITY, country=COUNTRY, point=COORDS, output_file=output_file_name)
 
-    logger.info(f"Radius: {radius} took: {time.time()-start}"),
+    #logger.info(f"Radius: {radius} took: {time.time()-start}"),
     st.image(output_file_name)
+    #st.write(output_file_name)
     with open(output_file_name, "rb") as file:
         st.download_button(
             label="Download Poster",
             data=file,  # Hier wird das geöffnete File-Objekt übergeben
-            file_name="mein_poster.png",
+            file_name=f"{CITY}_{theme}_{int(time.time())}.png",
             mime="image/png"
         )
