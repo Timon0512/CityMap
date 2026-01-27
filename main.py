@@ -2,7 +2,7 @@ from pathlib import Path
 import streamlit as st
 import base64
 import pandas as pd
-from maptoposter import create_map_poster as map
+import maptoposter.create_map_poster as mp
 import os
 from loguru import logger
 import time
@@ -30,7 +30,7 @@ def get_image_base64(path):
 
 @st.cache_data
 def get_coordinates_cached(city, country):
-    return map.get_coordinates(city, country)
+    return mp.get_coordinates(city, country)
 
 st.header("Your City as Poster")
 
@@ -56,10 +56,10 @@ with tab1:
 
 with tab2:
 
-    themes = map.get_available_themes()
+    themes = mp.get_available_themes()
     theme = st.selectbox("Select Theme", themes)
-    THEME = map.load_theme(theme)
-    map.THEME = THEME
+    THEME = mp.load_theme(theme)
+    mp.THEME = THEME
 
     df = pd.DataFrame({"Path": os.listdir("maptoposter/posters/thumbs")})
     df["Path"] = df["Path"].apply(lambda x: os.path.join("maptoposter/posters/thumbs", x))
@@ -95,10 +95,10 @@ with tab3:
 
 run = st.button("Run")
 if run:
-    output_file_name = map.generate_output_filename(CITY, theme)
+    output_file_name = mp.generate_output_filename(CITY, theme)
     start = time.time()
     with st.spinner("Creating Poster...", show_time=True):
-    #     map.create_poster(city=CITY,
+    #     mp.create_poster(city=CITY,
     #                       country=COUNTRY,
     #                       point=COORDS,
     #                       dist=radius,
