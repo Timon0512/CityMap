@@ -116,7 +116,7 @@ if run:
 
     #logger.info(f"Radius: {radius} took: {time.time()-start}"),
     st.image(output_file_name)
-    #st.write(output_file_name)
+    #st.write(output_file_name)##
     with open(output_file_name, "rb") as file:
         st.download_button(
             label="Download Poster",
