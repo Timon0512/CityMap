@@ -4,7 +4,7 @@ import base64
 import pandas as pd
 import maptoposter.create_map_poster as mp
 import os
-from loguru import logger
+#from loguru import logger
 import time
 import osmnx as ox
 from utils import plot_everything
@@ -32,7 +32,7 @@ def get_image_base64(path):
 def get_coordinates_cached(city, country):
     return mp.get_coordinates(city, country)
 
-st.header("Your City as Poster")
+st.header("Your City as a Poster")
 
 
 tab1, tab2, tab3 = st.tabs(["Coordinates", "Themes", "Settings"])
@@ -57,16 +57,27 @@ with tab1:
 with tab2:
 
     themes = mp.get_available_themes()
+    # st.write(themes)
     theme = st.selectbox("Select Theme", themes)
     THEME = mp.load_theme(theme)
     mp.THEME = THEME
 
-    df = pd.DataFrame({"Path": os.listdir("maptoposter/posters/thumbs")})
-    df["Path"] = df["Path"].apply(lambda x: os.path.join("maptoposter/posters/thumbs", x))
-    df["Theme"] = df["Path"].str.split("_", expand=True)[2]
-    df = df.drop_duplicates(subset=["Theme"])
+    thumb_dir = "maptoposter/posters/thumbs"
+    df = pd.DataFrame({"Theme": themes})
+    files = os.listdir(thumb_dir)
+
+    def find_thumbnail(theme_name):
+        # Sucht die erste Datei, die das Theme im Namen trägt
+        for f in files:
+            if theme_name.lower() in f.lower():
+                return os.path.join(thumb_dir, f)
+        return None  # Falls nichts gefunden wurde
+
+
+    # 4. Spalte im DataFrame erstellen
+    df["Path"] = df["Theme"].apply(find_thumbnail)
+
     df["Bild"] = df["Path"].apply(get_image_base64)
-    df = df[df["Bild"].notnull()]
     df = df.sort_values(by=["Theme"])
 
     st.dataframe(
@@ -81,6 +92,8 @@ with tab2:
 
     )
 
+    # st.dataframe(df)
+
 with tab3:
     radius = st.number_input("select Radius",
                              min_value=500,
@@ -89,7 +102,7 @@ with tab3:
                              step=500)
 
     network = st.selectbox("Network", ["all", "all_public", "bike", "drive", "walk"])
-    dist_type = st.selectbox("Type", ["bbox", "network"])
+    dpi = st.number_input("DPI", value=300, step=50)
 
 
 
@@ -97,30 +110,37 @@ run = st.button("Run")
 if run:
     output_file_name = mp.generate_output_filename(CITY, theme)
     start = time.time()
-    with st.spinner("Creating Poster...", show_time=True):
-
-        G = ox.graph_from_point(COORDS, dist=radius, dist_type=dist_type, network_type=network)
+    # with st.spinner("Creating Poster...", show_time=True):
+    with st.status("Creating Citymap..", expanded=True) as status:
+        status.write("Downloading street data..")
+        G = ox.graph_from_point(COORDS, dist=radius, dist_type="bbox", network_type=network)
         time.sleep(0.5)
         try:
+            status.write("Downloading water data...")
+            # status.update(label="Lade Gewässer...", state="running")
             water = ox.features_from_point(COORDS, tags={'natural': 'water', 'waterway': 'riverbank'}, dist=radius)
         except:
             water = None
         time.sleep(0.3)
 
         try:
+            status.write("Lade green space data...")
+            # status.update(label="Lade Gewässer...", state="running")
             parks = ox.features_from_point(COORDS, tags={'leisure': 'park', 'landuse': 'grass'}, dist=radius)
         except:
             parks = None
 
-        plot_everything(G=G, water=water, parks=parks, THEME=THEME, city=CITY, country=COUNTRY, point=COORDS, output_file=output_file_name)
-
+        status.write("Rendering map data...")
+        # status.update(label="Erstelle Poster-Design...", state="running")
+        image_data = plot_everything(G=G, water=water, parks=parks, THEME=THEME, city=CITY, country=COUNTRY, point=COORDS)
+        status.update(label="Citymap successfully completed!", state="complete", expanded=False)
     #logger.info(f"Radius: {radius} took: {time.time()-start}"),
-    st.image(output_file_name)
+    st.image(image_data, caption=f"Picture for {CITY}, {COUNTRY}")
     #st.write(output_file_name)##
-    with open(output_file_name, "rb") as file:
-        st.download_button(
-            label="Download Poster",
-            data=file,  # Hier wird das geöffnete File-Objekt übergeben
-            file_name=f"{CITY}_{theme}_{int(time.time())}.png",
-            mime="image/png"
-        )
+
+    st.download_button(
+        label="Download Poster",
+        data=image_data,  # Hier wird das geöffnete File-Objekt übergeben
+        file_name=f"{CITY}_{theme}_{int(time.time())}.png",
+        mime="image/png"
+    )
