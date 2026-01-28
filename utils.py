@@ -1,4 +1,5 @@
 import os
+import io
 import base64
 import pandas as pd
 from PIL import Image
@@ -11,11 +12,13 @@ def get_or_create_thumbnail(original_path):
     # Pfad für das Thumbnail definieren (z.B. im Unterordner /thumbnails)
     folder, filename = os.path.split(original_path)
     thumb_folder = os.path.join(folder, "thumbs")
+    print(thumb_folder)
 
     if not os.path.exists(thumb_folder):
         os.makedirs(thumb_folder)
 
     thumb_path = os.path.join(thumb_folder, f"thumb_{filename}")
+    print(thumb_path)
 
     # Nur erstellen, wenn es noch nicht existiert
     if not os.path.exists(thumb_path):
@@ -35,12 +38,11 @@ def get_image_base64(path):
         return None
 
 
-def plot_everything(G, water, parks, THEME, city, country, point, output_file):
+def plot_everything(G, water, parks, THEME, city, country, point):
     fig, ax = plt.subplots(figsize=(12, 16), facecolor=THEME['bg'])
     ax.set_facecolor(THEME['bg'])
     ax.set_position([0, 0, 1, 1])
 
-    # 3. Plot Layers
     # Layer 1: Polygons
     if water is not None and not water.empty:
         water.plot(ax=ax, facecolor=THEME['water'], edgecolor='none', zorder=1)
@@ -98,29 +100,28 @@ def plot_everything(G, water, parks, THEME, city, country, point, output_file):
     ax.plot([0.4, 0.6], [0.125, 0.125], transform=ax.transAxes,
             color=THEME['text'], linewidth=1, zorder=11)
 
-    # --- ATTRIBUTION (bottom right) ---
-    if FONTS:
-        font_attr = FontProperties(fname=FONTS['light'], size=8)
-    else:
-        font_attr = FontProperties(family='monospace', size=8)
-
-    ax.text(0.98, 0.02, "© OpenStreetMap contributors", transform=ax.transAxes,
-            color=THEME['text'], alpha=0.5, ha='right', va='bottom',
-            fontproperties=font_attr, zorder=11)
 
     # 5. Save
-    print(f"Saving to {output_file}...")
-    plt.savefig(output_file, dpi=300, facecolor=THEME['bg'])
+    # print(f"Saving to {output_file}...")
+    # plt.savefig(output_file, dpi=300, facecolor=THEME['bg'])
+    # plt.close()
+    # print(f"✓ Done! Poster saved as {output_file}")
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", dpi=300, facecolor=THEME['bg'])
     plt.close()
-    print(f"✓ Done! Poster saved as {output_file}")
+    buf.seek(0)
+    return buf
 
-
-# df = pd.DataFrame({"Path": os.listdir("maptoposter/posters/thumbs")})
-# df["Path"] = df["Path"].apply(lambda x: os.path.join("maptoposter/posters/thumbs", x))
-# df["Theme"] = df["Path"].str.split("_", expand=True)[2]
-# df = df.drop_duplicates(subset=["Theme"])
-# df["Bild"] = df["Path"].apply(get_image_base64)
-# df = df[df["Bild"].notnull()]
 #
-# print(df)
-
+# poster_folder = r"C:\Users\Timon\PycharmProjects\CityMap2\maptoposter\posters"
+#
+# # Liste alle Dateien im Ordner auf
+# for dateiname in os.listdir(poster_folder):
+#     # Nur PNG-Dateien verarbeiten (keine Ordner oder andere Dateien)
+#     if dateiname.lower().endswith(".png"):
+#         voller_pfad = os.path.join(poster_folder, dateiname)
+#
+#         # Funktion aufrufen
+#         thumb_pfad = get_or_create_thumbnail(voller_pfad)
+#         print(f"Thumbnail erstellt/geprüft für: {dateiname} -> {thumb_pfad}")

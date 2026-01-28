@@ -124,7 +124,7 @@ if run:
         time.sleep(0.3)
 
         try:
-            status.write("Lade green space data...")
+            status.write("Downloading green space data...")
             # status.update(label="Lade Gewässer...", state="running")
             parks = ox.features_from_point(COORDS, tags={'leisure': 'park', 'landuse': 'grass'}, dist=radius)
         except:
